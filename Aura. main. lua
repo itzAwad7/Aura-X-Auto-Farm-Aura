@@ -1,0 +1,276 @@
+-- ============================================================
+-- AUTO FARM AURA + REBIRTH GUI (Minimize + Credits)
+-- ============================================================
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Remote events
+local System = ReplicatedStorage:WaitForChild("System")
+local FarmAuraRemote     = System:WaitForChild("FarmAura")
+local StopFarmAuraRemote = System:WaitForChild("StopFarmAura")
+local FarmEnergyRemote   = System:WaitForChild("FarmEnergy")
+local RebirthRemote      = System:WaitForChild("Rebirth")
+
+-- ============================================================
+-- CREATE DRAGGABLE GUI
+-- ============================================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AutoFarmGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 340)     -- زيادة الطول لاستيعاب الرسالة
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -170)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+-- ============================================================
+-- TITLE BAR
+-- ============================================================
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -70, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Auto Farm Aura"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+-- Minimize button (dashes)
+local minBtn = Instance.new("TextButton")
+minBtn.Name = "MinimizeButton"
+minBtn.Size = UDim2.new(0, 28, 0, 28)
+minBtn.Position = UDim2.new(1, -34, 0.5, -14)
+minBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+minBtn.BorderSizePixel = 0
+minBtn.Text = "—"
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.TextSize = 16
+minBtn.Font = Enum.Font.GothamBold
+minBtn.AutoButtonColor = true
+minBtn.Parent = titleBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minBtn
+
+-- ============================================================
+-- DRAG LOGIC
+-- ============================================================
+local dragging = false
+local dragInput, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ============================================================
+-- MINIMIZE / RESTORE
+-- ============================================================
+local minimized = false
+local fullSize  = mainFrame.Size
+local miniSize  = UDim2.new(0, 250, 0, 35)
+local miniTitle = "Auto Farm Aura  ·  by itz_Awad7"
+
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        mainFrame.Size = miniSize
+        titleLabel.Text = miniTitle
+        minBtn.Text = "+"
+    else
+        mainFrame.Size = fullSize
+        titleLabel.Text = "Auto Farm Aura"
+        minBtn.Text = "—"
+    end
+end)
+
+-- ============================================================
+-- CONTENT CONTAINER (all toggles + credits)
+-- ============================================================
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.Size = UDim2.new(1, 0, 1, -35)
+content.Position = UDim2.new(0, 0, 0, 35)
+content.BackgroundTransparency = 1
+content.ClipsDescendants = true
+content.Parent = mainFrame
+
+-- ============================================================
+-- TOGGLE HELPER
+-- ============================================================
+local function createToggle(name, yPosition, callback)
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 220, 0, 35)
+    toggleBtn.Position = UDim2.new(0.5, -110, 0, yPosition)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Text = name .. " [OFF]"
+    toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleBtn.TextSize = 14
+    toggleBtn.Font = Enum.Font.Gotham
+    toggleBtn.Parent = content
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = toggleBtn
+
+    local isOn = false
+    toggleBtn.MouseButton1Click:Connect(function()
+        isOn = not isOn
+        toggleBtn.Text = name .. (isOn and " [ON]" or " [OFF]")
+        toggleBtn.BackgroundColor3 = isOn and Color3.fromRGB(0, 120, 60) or Color3.fromRGB(60, 60, 75)
+        callback(isOn)
+    end)
+end
+
+-- ============================================================
+-- STATE + LOOPS
+-- ============================================================
+local autoFarmAuraEnabled = false
+local autoGainAuraEnabled = false
+local autoRebirthEnabled  = false
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if autoFarmAuraEnabled then
+            pcall(function() FarmAuraRemote:FireServer() end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if autoGainAuraEnabled then
+            pcall(function() FarmEnergyRemote:FireServer() end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(3) do
+        if autoRebirthEnabled then
+            pcall(function() RebirthRemote:FireServer() end)
+        end
+    end
+end)
+
+-- ============================================================
+-- BUILD TOGGLES + STOP ALL
+-- ============================================================
+createToggle("Auto Farm Aura", 10, function(state)
+    autoFarmAuraEnabled = state
+    if not state then
+        pcall(function() StopFarmAuraRemote:FireServer() end)
+    end
+end)
+
+createToggle("Auto Gain Aura", 55, function(state)
+    autoGainAuraEnabled = state
+end)
+
+createToggle("Auto Rebirth", 100, function(state)
+    autoRebirthEnabled = state
+end)
+
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(0, 220, 0, 35)
+stopBtn.Position = UDim2.new(0.5, -110, 0, 145)
+stopBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+stopBtn.BorderSizePixel = 0
+stopBtn.Text = "STOP ALL"
+stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+stopBtn.TextSize = 14
+stopBtn.Font = Enum.Font.GothamBold
+stopBtn.Parent = content
+
+local stopCorner = Instance.new("UICorner")
+stopCorner.CornerRadius = UDim.new(0, 6)
+stopCorner.Parent = stopBtn
+
+stopBtn.MouseButton1Click:Connect(function()
+    autoFarmAuraEnabled = false
+    autoGainAuraEnabled = false
+    autoRebirthEnabled  = false
+    pcall(function() StopFarmAuraRemote:FireServer() end)
+    for _, child in ipairs(content:GetChildren()) do
+        if child:IsA("TextButton") and child ~= stopBtn then
+            child.Text = child.Text:gsub("%[ON%]", "[OFF]")
+            child.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+        end
+    end
+end)
+
+-- ============================================================
+-- CREDITS / FOLLOW MESSAGE
+-- ============================================================
+local credits = Instance.new("TextLabel")
+credits.Size = UDim2.new(0, 220, 0, 60)
+credits.Position = UDim2.new(0.5, -110, 0, 190)
+credits.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+credits.BorderSizePixel = 0
+credits.Text = "Script by: itz_Awad7\n⭐ Follow me for more scripts! ⭐"
+credits.TextColor3 = Color3.fromRGB(255, 215, 0)
+credits.TextSize = 13
+credits.Font = Enum.Font.GothamBold
+credits.TextWrapped = true
+credits.Parent = content
+
+local creditsCorner = Instance.new("UICorner")
+creditsCorner.CornerRadius = UDim.new(0, 6)
+creditsCorner.Parent = credits
+
+-- ============================================================
+-- DONE
+-- ============================================================
+print("[Auto Farm GUI] Loaded — by itz_Awad7 | Follow for more scripts!")
